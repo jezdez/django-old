@@ -1,5 +1,6 @@
 import os
 import urllib
+from urlparse import urlparse
 
 from django.conf import settings
 from django.core.handlers.wsgi import WSGIHandler, STATUS_CODE_TEXT
@@ -40,11 +41,11 @@ class StaticFilesHandler(WSGIHandler):
         return static.serve(request, path=filename, document_root=absolute_path)
 
     def __call__(self, environ, start_response):
-        # Ignore requests that aren't under the media prefix.
-        # Also ignore all requests if prefix isn't a relative URL.
-        if (self.media_url.startswith('http://') or
-            self.media_url.startswith('https://') or
-                not environ['PATH_INFO'].startswith(self.media_url)):
+        media_url_bits = urlparse(self.media_url)
+        # Ignore all requests if the host is provided as part of the media_url.
+        # Also ignore requests that aren't under the media path.
+        if (media_url_bits[1] or
+                not environ['PATH_INFO'].startswith(media_url_bits[2])):
             return self.application(environ, start_response)
         request = self.application.request_class(environ)
         try:
