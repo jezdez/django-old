@@ -106,17 +106,21 @@ class Settings(BaseSettings):
         # of all those apps.
         new_installed_apps = []
         for app in self.INSTALLED_APPS:
-            if app.endswith('.*'):
-                app_mod = importlib.import_module(app[:-2])
+            if type(app) in [tuple, list]:
+                app_name, app_kwargs = app
+            else:
+                app_name, app_kwargs = app, {}
+            if app_name.endswith('.*'):
+                app_mod = importlib.import_module(app_name[:-2])
                 appdir = os.path.dirname(app_mod.__file__)
                 app_subdirs = os.listdir(appdir)
                 app_subdirs.sort()
                 name_pattern = re.compile(r'[a-zA-Z]\w*')
                 for d in app_subdirs:
                     if name_pattern.match(d) and os.path.isdir(os.path.join(appdir, d)):
-                        new_installed_apps.append('%s.%s' % (app[:-2], d))
+                        new_installed_apps.append('%s.%s' % (app_name[:-2], d))
             else:
-                new_installed_apps.append(app)
+                new_installed_apps.append((app_name, app_kwargs))
         self.INSTALLED_APPS = new_installed_apps
 
         if hasattr(time, 'tzset') and self.TIME_ZONE:
