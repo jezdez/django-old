@@ -9,16 +9,15 @@ DEFAULT_NAMES = ('verbose_name', 'db_prefix', 'models_path')
 
 
 class AppOptions(object):
-    def __init__(self, name, meta):
+    def __init__(self, name, meta, label):
         self.name = name
         self.meta = meta
+        self.label = label
         self.errors = []
         self.models = SortedDict()
 
     def contribute_to_class(self, cls, name):
         cls._meta = self
-        # get the name from the path e.g. "auth" for "django.contrib.auth"
-        self.label = self.name.split('.')[-1]
         self.models_module = None
         self.module = import_module(self.name)
         self.path = os.path.dirname(self.module.__file__)

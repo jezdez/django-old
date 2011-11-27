@@ -20,3 +20,4 @@ get_model = cache.get_model
 register_models = cache.register_models
 load_app = cache.load_app
 app_cache_ready = cache.app_cache_ready
+get_instances = cache.get_instances

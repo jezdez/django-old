@@ -82,8 +82,6 @@ class AppCache(object):
                     app_name, app_kwargs = app_name
                 else:
                     app_kwargs = {}
-                if app_name in self.handled:
-                    continue
                 self.load_app(app_name, app_kwargs, True)
             if not self.nesting_level:
                 for app_name, app_kwargs in self.postponed:
@@ -115,7 +113,7 @@ class AppCache(object):
         finally:
             self.write_lock.release()
 
-    def get_app_class(self, app_name):
+    def get_app_class(self, app_name, app_label):
         """
         Returns an app class for the given app name, which can be a
         dotted path to an app class or a dotted app module path.
@@ -125,7 +123,7 @@ class AppCache(object):
         except ValueError:
             # First, return a new app class for the given module if
             # it's one level module path that can't be rsplit (e.g. 'myapp')
-            return App.from_name(app_name)
+            return App.from_name(app_name, app_label)
         try:
             # Secondly, try to import the module directly,
             # because it'll fail with a class path or a bad path
@@ -149,7 +147,7 @@ class AppCache(object):
                             "App '%s' must be a subclass of "
                             "'django.apps.App'" % app_name)
                     return app_class
-        return App.from_name(app_name)
+        return App.from_name(app_name, app_label)
 
     def load_app(self, app_name, app_kwargs=None, can_postpone=False):
         """
@@ -170,9 +168,10 @@ class AppCache(object):
 
         # check if an app instance with app_name already exists, if not
         # then create one
-        app = self.find_app(app_name.split('.')[-1])
+        app_label = app_kwargs.get('label', app_name.split('.')[-1])
+        app = self.find_app(app_label)
         if not app:
-            app_class = self.get_app_class(app_name)
+            app_class = self.get_app_class(app_name, app_label)
             app = app_class(**app_kwargs)
             self.loaded_apps.append(app)
             # Send the signal that the app has been loaded
@@ -220,6 +219,13 @@ class AppCache(object):
         for app in self.loaded_apps:
             if app._meta.models_module == models_module:
                 return app
+    
+    def get_instances(self, app_name):
+        apps = []
+        for app in self.loaded_apps:
+            if app._meta.name == app_name:
+                apps.append(app)
+        return apps
 
     def app_cache_ready(self):
         """

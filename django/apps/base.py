@@ -29,7 +29,8 @@ class AppBase(type):
             # For 'django.contrib.sites.app', this would be 'django.contrib.sites'
             app_module = sys.modules[new_class.__module__]
             app_name = app_module.__name__.rsplit('.', 1)[0]
-        new_class.add_to_class('_meta', AppOptions(app_name, meta))
+        app_label = attrs.pop('_label', app_name.split('.')[-1])
+        new_class.add_to_class('_meta', AppOptions(app_name, meta, app_label))
         # For easier Meta inheritance
         new_class.add_to_class('Meta', attr_meta)
         # Add all remaining attributes to the class.
@@ -61,7 +62,7 @@ class App(object):
         return '<App: %s>' % self._meta.name
 
     @classmethod
-    def from_name(cls, name):
+    def from_name(cls, name, label):
         upper = lambda match: match.group(1).upper()
         cls_name = module_name_re.sub(upper, name.split('.')[-1])
-        return type(cls_name[0].upper()+cls_name[1:], (cls,), {'_name': name})
+        return type(cls_name[0].upper()+cls_name[1:], (cls,), {'_name': name, '_label': label})
